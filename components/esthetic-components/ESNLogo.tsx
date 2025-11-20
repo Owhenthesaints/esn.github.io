@@ -1,5 +1,5 @@
 import Image from "next/image";
-import {DEFAULT_LOGO_HEIGHT, DEFAULT_LOGO_WIDTH} from "@/constants/ESTHETIC-CONSTANTS";
+import {DEFAULT_LOGO_HEIGHT, DEFAULT_LOGO_WIDTH} from "@/constants/styling_constants";
 import ESNLogoImg from "../../public/Img/ESNlogo.png"
 
 export default function ESNLogo({className, width, height}: {className?: string, width?: number, height?: number}) {
