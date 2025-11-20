@@ -44,3 +44,7 @@ next-env.d.ts
 
 *credentials*.json
 db/
+
+# Prisma
+/prisma/migrations/
+generated/

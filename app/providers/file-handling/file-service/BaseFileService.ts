@@ -1,5 +1,5 @@
 import {CloudProvider} from "@/app/providers/drive-access/generic/cloud-interface/CloudProvider";
-import {CloudEntity, CloudFile, CloudFolder} from "@/app/providers/drive-access/generic/file-service/FileInterfaces";
+import {CloudEntity, CloudFile, CloudFolder} from "@/app/providers/file-handling/file-interfaces/FileInterfaces";
 
 /**
  * base class for file service providers

@@ -8,7 +8,7 @@ export default class ServiceAccountGoogleAuth implements GoogleAuthProvider{
         this.auth = auth
     }
 
-    static fromFile(filePath: string): ServiceAccountGoogleAuth {
+    static fromFilePath(filePath: string): ServiceAccountGoogleAuth {
         return new ServiceAccountGoogleAuth(new GoogleAuth({
             keyFile: filePath,
             scopes: ['https://www.googleapis.com/auth/drive.readonly']

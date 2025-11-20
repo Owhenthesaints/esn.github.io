@@ -1,7 +1,7 @@
 
 import {drive_v3} from "googleapis";
 import {GoogleAuthProvider} from "@/app/providers/drive-access/generic/auth/AuthProvider";
-import {CloudEntity, CloudFile, CloudFolder} from "@/app/providers/drive-access/generic/file-service/FileInterfaces";
+import {CloudEntity, CloudFile, CloudFolder} from "@/app/providers/file-handling/file-interfaces/FileInterfaces";
 import {CloudProvider} from "@/app/providers/drive-access/generic/cloud-interface/CloudProvider";
 
 

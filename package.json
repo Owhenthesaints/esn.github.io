@@ -7,11 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test-api-setup": "dotenv -e .env.local -- tsx app/api/event-fetching/route.ts",
+    "test-api-setup": "dotenv -e .env.local -- tsx app/api/esn-event/refresh-db/route.ts",
     "test:api": "npm run test-api-setup"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
+    "@prisma/client": "^7.0.0",
     "archiver": "^7.0.1",
     "googleapis": "^105.0.0",
     "next": "^16.0.3",
@@ -19,6 +20,8 @@
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@prisma/adapter-pg": "^7.0.0",
+    "@prisma/config": "^7.0.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/node": "^20",
     "@types/react": "^19",

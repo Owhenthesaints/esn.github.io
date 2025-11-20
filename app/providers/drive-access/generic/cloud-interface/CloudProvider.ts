@@ -1,4 +1,4 @@
-import {CloudFile, CloudFolder} from "@/app/providers/drive-access/generic/file-service/FileInterfaces";
+import {CloudFile, CloudFolder} from "@/app/providers/file-handling/file-interfaces/FileInterfaces";
 
 export interface CloudProvider {
     listSubFiles(folderId: string): Promise<CloudFile[]>;

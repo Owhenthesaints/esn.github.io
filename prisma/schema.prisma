@@ -1,0 +1,31 @@
+generator client {
+    provider = "prisma-client"
+    output   = "../generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+model Event {
+    id          Int       @id @default(autoincrement())
+    title       String
+    createdAt   DateTime  @default(now())
+    eventDate   DateTime
+    eventDescription String?
+    signupDescription String?
+    displayed  Boolean   @default(true)
+    driveFolderId   Int
+    updatedAt   DateTime  @updatedAt
+    signupDeadline DateTime?
+    eventEndDate DateTime?
+    location    String?
+    images Image[]
+}
+
+model Image {
+    id          Int       @id @default(autoincrement())
+    driveFileId String
+    event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+    eventId     Int
+}
