@@ -19,8 +19,13 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
         super({auth: auth.getAuth()});
     }
 
-    private isFile(file: CloudEntity) {
-        return file.mimeType === FOLDER_CONSTANT;
+    private isFile(file: CloudEntity | string) {
+        if (typeof file === 'string'){
+            return file !== FOLDER_CONSTANT;
+        }
+        else {
+            return file.mimeType !== FOLDER_CONSTANT;
+        }
     }
 
     protected SchemasToEntities(files: Schema$File[]): CloudEntity[] {
@@ -35,8 +40,8 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
         const isRoot = !parentId;
         const len = files.length;
         const childrenId = files.map(file => file.id!)
-        const foldersId = files.filter(file => file.mimeType === FOLDER_CONSTANT).map(folder => folder.id!)
-        const fileIds = files.filter(file => file.mimeType !== FOLDER_CONSTANT).map(file => file.id!)
+        const foldersId = files.filter(file => !this.isFile(file.id!)).map(folder => folder.id!)
+        const fileIds = files.filter(file => this.isFile(file.id!)).map(file => file.id!)
         const folder: CloudFolder = {
             id: folderData.id,
             name: folderData.name ? folderData.name : 'Unknown',

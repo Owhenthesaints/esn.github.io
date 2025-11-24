@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { useState } from "react";
 import ESNLogo from "@/components/esthetic-components/ESNLogo";
@@ -21,7 +23,7 @@ export default function Header() {
                     </button>
                     <div></div>
                     <div className="flex-1 flex justify-center">
-                        <ESNLogo/>
+                        <ESNLogo link={true}/>
                     </div>
                 </nav>
             </header>

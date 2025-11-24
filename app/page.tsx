@@ -1,6 +1,6 @@
 // `pages/index.tsx`
 import type { NextPage } from 'next'
-import '../app/globals.css'
+import './globals.css'
 import WhiteContentBox from "@/components/esthetic-components/WhiteContentBox";
 
 const Home: NextPage = () => (
