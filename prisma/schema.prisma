@@ -15,7 +15,7 @@ model Event {
     eventDescription String?
     signupDescription String?
     displayed  Boolean   @default(true)
-    driveFolderId   Int
+    driveFolderId   String
     updatedAt   DateTime  @updatedAt
     signupDeadline DateTime?
     eventEndDate DateTime?

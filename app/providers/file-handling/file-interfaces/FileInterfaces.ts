@@ -4,19 +4,23 @@ export interface CloudEntity {
     id: string;
     name: string;
     mimeType: string;
+    mainType: 'file' | 'folder';
 }
 
 export interface CloudFile extends CloudEntity {
-    size?: number;
-    lastModifiedTime?: string;
-    fileType?: typeof SUPPORTED_FILE_TYPE_LIST[number];
+    mainType: 'file';
+    size: number;
+    lastModifiedTime: string;
+    fileType: typeof SUPPORTED_FILE_TYPE_LIST[number];
 }
 
 
 export interface CloudFolder extends CloudEntity{
-    numEntities?: number;
-    numFiles?: number;
-    numFolders?: number;
-    parentFolderId?: CloudEntity["id"];
-    childrenIds?: CloudEntity["id"][];
+    mainType: 'folder';
+    numEntities: number;
+    parentFolderId?: CloudEntity["id"] | undefined;
+    root: boolean;
+    childrenIds: CloudEntity["id"][];
+    fileIds: CloudFile["id"][];
+    folderIds: CloudFolder["id"][];
 }

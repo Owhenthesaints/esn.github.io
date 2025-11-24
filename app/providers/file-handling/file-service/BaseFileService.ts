@@ -1,5 +1,6 @@
 import {CloudProvider} from "@/app/providers/drive-access/generic/cloud-interface/CloudProvider";
 import {CloudEntity, CloudFile, CloudFolder} from "@/app/providers/file-handling/file-interfaces/FileInterfaces";
+import * as fs from "node:fs";
 
 /**
  * base class for file service providers
@@ -28,5 +29,10 @@ export class BaseFileService {
         files.forEach(file => this.entityCache.set(file.id, file));
         files.forEach(file => this.fileCache.set(file.id, file));
         return files;
+    }
+
+    async downloadFile(fileId: string, filePath: string): Promise<boolean> {
+        const fileBuffer = await this.provider.DownloadFile(fileId);
+        fs.writeFileSync(filePath, fileBuffer)
     }
 }
