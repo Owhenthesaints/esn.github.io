@@ -19,3 +19,8 @@ export async function getEventFolders() {
 
     return await fileService.listFolders(process.env.ESN_EVENTS_FOLDER_ID);
 }
+
+export async function getEventFolderById(eventId: string) {
+    const events = await getEventFolders();
+    return events.find(event => event.id === eventId);
+}

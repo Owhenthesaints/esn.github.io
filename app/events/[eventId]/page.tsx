@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
-import { getEventFolders } from "@/app/services/eventService";
+import {getEventFolderById, getEventFolders} from "@/app/services/eventService";
+import WhiteContentBox from "@/components/esthetic-components/WhiteContentBox";
 
 
 export async function generateStaticParams() {
@@ -13,17 +14,15 @@ export const revalidate = 3600; // Revalidate every hour
 
 export default async function EventPage({ params }: { params: Promise<{ eventId: string }> }) {
     const { eventId } = await params;
-    const events = await getEventFolders();
-    const event = events.find(e => e.id === eventId);
+    const event = await getEventFolderById(eventId)
 
     if (!event) {
         notFound();
     }
 
     return (
-        <div>
-            <h1>{event.name}</h1>
-            <p>ID: {event.id}</p>
-        </div>
+        <WhiteContentBox title={event.name}>
+            <p>Details about the event &#34;{event.name}&#34; will be displayed here.</p>
+        </WhiteContentBox>
     );
 }

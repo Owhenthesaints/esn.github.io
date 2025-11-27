@@ -1,36 +1,27 @@
+import type { Metadata } from 'next';
 import EventPresentationBox from "@/components/functional-blocks/EventPresentationBox";
-import Link from "next/link";
 import { getEventFolders } from "@/app/services/eventService";
-import {CloudFolder} from "@/app/providers/file-handling/file-interfaces/FileInterfaces";
+import Link from "next/link";
 
-export async function generateStaticParams() {
-    const events =  await getEventFolders();
-    return events.map((event) => ({
-        id: event.id,
-        name: event.name
-
-    })
-    )
+export const metadata: Metadata = {
+    "title": "Events",
+    description: "All available events organized by ESN Fribourg",
+    openGraph: {
+        title: "Events - ESN Fribourg",
+        description: "All available events organized by ESN Fribourg",
+        type: "website"
+    }
 }
 
 export const revalidate = 3600;
 
-export default async function Events({params}: { params: Promise<{id: string[], name: string[]}> }) {
-    const {id, name} = await params;
+export default async function Events() {
 
+    const events = await getEventFolders();
 
     return (
         <div>
-            <EventPresentationBox />
-            <ul>
-                {events && events.map(event => (
-                    <li key={event.id}>
-                        <Link href={`/events/${event.id}`}>
-                            {event.name}
-                        </Link>
-                    </li>
-                ))}
-            </ul>
+            <EventPresentationBox events={events}/>
         </div>
     );
 }
