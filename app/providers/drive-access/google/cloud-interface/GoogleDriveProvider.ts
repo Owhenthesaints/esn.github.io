@@ -1,10 +1,11 @@
-import {drive_v3} from "googleapis";
+import {drive_v3, google} from "googleapis";
 import {GoogleAuthProvider} from "@/app/providers/drive-access/generic/auth/AuthProvider";
 import {CloudEntity, CloudFile, CloudFolder} from "@/app/providers/file-handling/file-interfaces/FileInterfaces";
 import {CloudProvider} from "@/app/providers/drive-access/generic/cloud-interface/CloudProvider";
 import Schema$File = drive_v3.Schema$File;
 import {SUPPORTED_FILE_TYPES} from "@/constants/supported_files";
 import {file} from "googleapis/build/src/apis/file";
+import {base} from "next/dist/build/webpack/config/blocks/base";
 
 const FOLDER_CONSTANT = "application/vnd.google-apps.folder";
 
@@ -14,18 +15,52 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
     private fileCache: Map<string, CloudFile> = new Map();
     private folderCache: Map<string, CloudFolder> = new Map();
     private entityCache: Map<string, CloudEntity> = new Map();
+    private sheets;
 
     constructor(auth: GoogleAuthProvider) {
         super({auth: auth.getAuth()});
+        this.sheets = google.sheets({version: 'v4', auth: auth.getAuth()});
+    }
+
+    private async getSheetsValues(spreadsheetId: string, range: string): Promise<string[][]> {
+        // quick check if entity is cached make sure its a spreadsheet
+        if (this.isCached(spreadsheetId)) {
+            const cachedEntity = this.getCachedEntity(spreadsheetId)!;
+            // check if cached entity is a mimeType of spreadsheet
+            if (this.getFileType(cachedEntity.mimeType) !== SUPPORTED_FILE_TYPES.SHEET) {
+                throw new Error('Owhenthesaints: Cached entity is not a spreadsheet');
+            }
+        }
+        const res = await this.sheets.spreadsheets.values.get({
+            spreadsheetId: spreadsheetId,
+            range: range,
+        });
+        return res.data.values || [];
+    }
+
+    async getCalcFileContent(fileId: string, lowerRange: string, higherRange: string) {
+        const range = `${lowerRange}:${higherRange}`;
+        return await this.getSheetsValues(fileId, range);
     }
 
     private isFile(file: CloudEntity | string) {
-        if (typeof file === 'string'){
+        if (typeof file === 'string') {
             return file !== FOLDER_CONSTANT;
-        }
-        else {
+        } else {
             return file.mimeType !== FOLDER_CONSTANT;
         }
+    }
+
+    private isValidSchemaEntity(entity: Schema$File): boolean {
+        return entity.id !== undefined && entity.name !== undefined && entity.mimeType !== undefined && entity.createdTime !== undefined && entity.modifiedTime !== undefined;
+    }
+
+    private isValidSchemaFile(file: Schema$File): boolean {
+        return this.isValidSchemaEntity(file) && file.size !== undefined && file.mimeType !== FOLDER_CONSTANT;
+    }
+
+    private isValidSchemaFolder(folder: Schema$File): boolean {
+        return this.isValidSchemaEntity(folder) && folder.mimeType === FOLDER_CONSTANT;
     }
 
     protected SchemasToEntities(files: Schema$File[]): CloudEntity[] {
@@ -33,8 +68,13 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
     }
 
     protected SchemaToFolder(folderData: Schema$File, files: Schema$File[]): CloudFolder {
-        if (!folderData.id || !folderData.name) {
-            throw Error(`Folder data must have id and name`);
+        if (!this.isValidSchemaFolder(folderData)) {
+            throw Error("Not a valid folder schema data");
+        }
+        for (const file of files) {
+            if (!this.isValidSchemaEntity(file)) {
+                throw Error(`Child file data must have id, name, size and mimeType`);
+            }
         }
         const parentId = folderData.parents && folderData.parents.length > 0 ? folderData.parents[0] : null;
         const isRoot = !parentId;
@@ -42,30 +82,35 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
         const childrenId = files.map(file => file.id!)
         const foldersId = files.filter(file => !this.isFile(file.id!)).map(folder => folder.id!)
         const fileIds = files.filter(file => this.isFile(file.id!)).map(file => file.id!)
+        const baseEntity = this.SchemaToEntity(folderData);
+
         const folder: CloudFolder = {
-            id: folderData.id,
-            name: folderData.name ? folderData.name : 'Unknown',
+            ...baseEntity,
+            mainType: 'folder',
             parentFolderId: parentId ? parentId : undefined,
             root: isRoot,
             numEntities: len,
-            mimeType: 'application/vnd.google-apps.folder',
-            mainType: 'folder',
             childrenIds: childrenId,
             fileIds: fileIds,
             folderIds: foldersId,
         }
         // add to the folder cache
-        this.folderCache.set(folderData.id, folder);
+        this.folderCache.set(folderData.id!, folder);
         return folder;
 
     }
 
     protected SchemaToEntity(file: Schema$File): CloudEntity {
+        if (!this.isValidSchemaEntity(file)) {
+            throw Error(`File data must have id, name, mimeType, createdTime and modifiedTime`);
+        }
         return {
             id: file.id!,
             name: file.name!,
             mimeType: file.mimeType!,
-            mainType: file.mimeType === FOLDER_CONSTANT ? 'folder' : 'file'
+            mainType: file.mimeType === FOLDER_CONSTANT ? 'folder' : 'file',
+            createdTime: new Date(file.createdTime!).getTime(),
+            lastModifiedTime: new Date(file.modifiedTime!).getTime(),
         }
     }
 
@@ -88,16 +133,14 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
     }
 
     protected SchemaToFile(fileData: Schema$File): CloudFile {
-        if (!fileData.id || !fileData.name || !fileData.size || !fileData.modifiedTime) {
+        if (!this.isValidSchemaFile(fileData)) {
             throw Error(`File data must have id, name, size and modifiedTime`);
         }
+        const baseEntity = this.SchemaToEntity(fileData);
         return {
-            id: fileData.id,
-            name: fileData.name ? fileData.name : 'Unknown',
-            mimeType: fileData.mimeType ? fileData.mimeType : 'application/octet-stream',
+            ...baseEntity,
             mainType: 'file',
             size: parseInt(fileData.size!),
-            lastModifiedTime: fileData.modifiedTime!,
             fileType: this.getFileType(fileData.mimeType ? fileData.mimeType : ''),
         }
     }
@@ -148,9 +191,10 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
     }
 
     protected async entityToFile(entity: CloudEntity): Promise<CloudFile> {
-        const res = await this.files.get({
-            fileId: entity.id
-        })
+        if (!this.isFile(entity)) {
+            throw new Error('Entity is not a file, impossible to convert to CloudFile');
+        }
+        const res = await this.makeFullQuery(entity.id);
         if (res) {
             return this.SchemaToFile(res.data);
         } else {
@@ -168,15 +212,17 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
         }
     }
 
-    private makeEntityQuery(entityId: string) {
+    private makeFullQuery(entityId: string) {
         return this.files.get({
             fileId: entityId,
+            fields: 'id, name, mimeType, size, createdTime, modifiedTime, parents, size'
         });
     }
 
-    private listFileQuery(folderId: string) {
+    private listEntitiesQuery(folderId: string) {
         return this.files.list({
             q: `'${folderId}' in parents and trashed = false`,
+            fields: 'files(id, name, mimeType, size, createdTime, modifiedTime)',
         })
     }
 
@@ -191,7 +237,7 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
             const cachedFile = this.getCachedFile(fileId)!;
             return Promise.resolve(cachedFile);
         }
-        return this.makeEntityQuery(fileId).then(res => {
+        return this.makeFullQuery(fileId).then(res => {
             if (!res) {
                 throw new Error('Owhenthesaints: File response is null while caching');
             } else if (!res!.data) {
@@ -203,11 +249,11 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
         });
     }
 
-    private async makeFolder(folderId: string) : Promise<CloudFolder> {
+    private async makeFolder(folderId: string): Promise<CloudFolder> {
         if (this.isFolderCached(folderId)) {
             return this.getCachedFolder(folderId)!;
         }
-        const [childrenRes, parentRes] = await Promise.all([this.listFileQuery(folderId), this.makeEntityQuery(folderId)]);
+        const [childrenRes, parentRes] = await Promise.all([this.listEntitiesQuery(folderId), this.makeFullQuery(folderId)]);
 
         if (!childrenRes) {
             throw new Error('Owhenthesaints: Children response is null');
@@ -228,15 +274,14 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
     }
 
 
-
     async listEntities(folderId: string, cacheFolder = true, cacheFiles = true): Promise<CloudEntity[]> {
 
-        const childrenRes = await this.listFileQuery(folderId);
+        const childrenRes = await this.listEntitiesQuery(folderId);
         const children = childrenRes.data.files || [];
         const entities = this.SchemasToEntities(children);
 
 
-        if (cacheFolder){
+        if (cacheFolder) {
             this.makeFolder(folderId);
         }
         if (cacheFiles) {
@@ -253,7 +298,8 @@ export class GoogleDriveProvider extends drive_v3.Drive implements CloudProvider
 
     async listSubFiles(folderId: string): Promise<CloudFile[]> {
         const entities = await this.listEntities(folderId);
-        const filePromisses = entities.map(entity => this.entityToFile(entity));
+        const filePromisses = entities.filter(entity => entity.mainType === 'file')
+            .map(entity => this.entityToFile(entity));
         return await Promise.all(filePromisses);
     }
 

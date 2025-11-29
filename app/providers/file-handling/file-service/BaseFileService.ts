@@ -1,6 +1,7 @@
 import {CloudProvider} from "@/app/providers/drive-access/generic/cloud-interface/CloudProvider";
 import {CloudEntity, CloudFile, CloudFolder} from "@/app/providers/file-handling/file-interfaces/FileInterfaces";
 import * as fs from "node:fs";
+import {SUPPORTED_FILE_TYPES} from "@/constants/supported_files";
 
 /**
  * base class for file service providers
@@ -9,30 +10,30 @@ import * as fs from "node:fs";
  */
 export class BaseFileService {
     protected provider: CloudProvider;
-    private entityCache: Map<string, CloudEntity> = new Map();
-    private fileCache: Map<string, CloudFile> = new Map();
-    private folderCache: Map<string, CloudFolder> = new Map();
 
     constructor(provider: CloudProvider) {
         this.provider = provider;
     }
 
+    async getSpreadsheetContent(fileId: string) {
+        return this.provider.getCalcFileContent(fileId, 'A1', 'B7');
+    }
+
     async listFolders(folderId: string): Promise<CloudFolder[]> {
-        const folders = await this.provider.listSubFolders(folderId);
-        folders.forEach(folder => this.entityCache.set(folder.id, folder));
-        folders.forEach(folder => this.folderCache.set(folder.id, folder));
-        return folders;
+        return await this.provider.listSubFolders(folderId);
     }
 
     async listFiles(folderId: string): Promise<CloudFile[]> {
-        const files = await this.provider.listSubFiles(folderId);
-        files.forEach(file => this.entityCache.set(file.id, file));
-        files.forEach(file => this.fileCache.set(file.id, file));
-        return files;
+        return await this.provider.listSubFiles(folderId);
     }
 
-    async downloadFile(fileId: string, filePath: string): Promise<boolean> {
+    async downloadFile(fileId: string, filePath: string){
         const fileBuffer = await this.provider.DownloadFile(fileId);
         fs.writeFileSync(filePath, fileBuffer)
+    }
+
+    async getFileWithName(folderId: string, fileName: string, type?: SUPPORTED_FILE_TYPES) {
+        const files = await this.listFiles(folderId);
+        return files.find(file => file.name === fileName && (type === undefined || file.fileType === type))
     }
 }

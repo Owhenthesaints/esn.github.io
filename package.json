@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test-api-setup": "dotenv -e .env.local -- tsx app/api/esn-event/refresh-db/route.ts",
-    "test:api": "npm run test-api-setup"
+    "test:api": "npm run test-api-setup",
+    "test-event-setup": "dotenv -e .env.local -- tsx app/services/eventService.ts",
+    "test:event": "npm run test-event-setup"
   },
   "dependencies": {
     "@google-cloud/local-auth": "^2.1.0",
